@@ -1,0 +1,81 @@
+<html>
+    <head>
+        <title>Upload Canvas</title>
+        <script lang="javascript">
+            function resize_image(event) {
+                var canvas = document.getElementById("my_canvas");
+                var ctx = canvas.getContext("2d");
+                var reader = new FileReader();
+                var img = new Image();
+                var type = '';
+                var ratio = 1;
+
+                img.onerror = function(e) {
+                  console.log("Not ok", e);
+                }
+
+                img.onload = function (img_onload_event) {
+                    canvas.height = canvas.width * (img.height / img.width);
+
+                    // step 1 - resize to 50%
+                    var oc = document.createElement('canvas'),
+                        octx = oc.getContext('2d');
+
+                    oc.width = img.width * ratio;
+                    oc.height = img.height * ratio;
+                    octx.drawImage(img, 0, 0, oc.width, oc.height);
+
+                    // step 2
+                    octx.drawImage(oc, 0, 0, oc.width, oc.height);
+
+                    // step 3, resize to final size
+                    ctx.drawImage(oc, 0, 0, oc.width, oc.height, 0, 0, canvas.width, canvas.height);
+
+                    var dataURL = oc.toDataURL(type, ratio)
+                    // var blob = dataURItoBlob(dataURL)
+
+                    b64 = dataURL;
+                    padding = (b64.charAt(b64.length - 2) === '=') ? 2 : ((b64.charAt(b64.length - 1) === '=') ? 1 : 0);
+                    fileSize = (b64.length * 0.75 - padding) / 1024;
+                    if(fileSize > 500) {
+                        img.src = b64;
+                        return;
+                    }
+
+                    var my_image_base64 = document.getElementById('my_image_base64')
+                    my_image_base64.setAttribute("value", dataURL)
+                }
+                
+                reader.onload = function (e) {
+                    b64 = reader.result;
+                    padding = (b64.charAt(b64.length - 2) === '=') ? 2 : ((b64.charAt(b64.length - 1) === '=') ? 1 : 0);
+                    fileSize = (b64.length * 0.75 - padding) / 1024;
+                    if(fileSize > 500){
+                        ratio = 0.8
+                    }
+
+                    img.src = e.target.result;
+                }
+                type = event.target.files[0] || 'image/jpeg';
+                reader.readAsDataURL(event.target.files[0]);
+            }
+
+
+            window.onload = function(){
+                document.getElementById('my_image').addEventListener('change', resize_image, false);
+            }
+        </script>
+    </head>
+
+    <body>
+        <h2>{{ message }}</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input  type="file"  id="my_image" />
+            <input  type="hidden" id="my_image_base64" name="image_base64" />
+            <button id="upload_button"> Upload </button>
+        </form>
+        <br/>
+        <canvas id="my_canvas" width="500" />
+    </body>
+</html>
